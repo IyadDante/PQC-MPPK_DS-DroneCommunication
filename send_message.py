@@ -15,8 +15,9 @@ message = json.dumps(telemetry_data)
 signed_message = sign_message(message)
 
 # Send the signed message
-HOST = "10.0.0.1"  # Replace with the PC's IP
-PORT = 12345
+HOST = "10.0.0.202"  # Your PC's IPv4 address
+PORT = 12345         # Ensure the port matches the receiver script
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     s.sendall(json.dumps({"message": message, "signature": signed_message}).encode())
