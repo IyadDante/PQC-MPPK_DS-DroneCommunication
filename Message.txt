@@ -1,0 +1,6 @@
+This is a sample text for hashing.
+
+"location": "45.4215, -75.6972",
+"altitude": "120m",
+"speed": "25km/h",
+"battery": "85%"
