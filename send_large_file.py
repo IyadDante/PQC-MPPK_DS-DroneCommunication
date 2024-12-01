@@ -12,7 +12,7 @@ logging.basicConfig(
 
 HOST = "10.0.0.202"  # Replace with your PC's IP
 PORT = 12345
-FILE_PATH = "large_file.bin"  # Path to the large file
+FILE_PATH = "large_file.bin"  # Ensure this points to the 200MB file
 
 BUFFER_SIZE = 1024 * 1024  # 1MB chunks
 
