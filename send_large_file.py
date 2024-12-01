@@ -1,15 +1,19 @@
 import socket
 
-HOST = "0.0.0.0"  # Listen on all available interfaces
-PORT = 12345       # Same port as in send_message.py
+HOST = "10.0.0.202"  # Replace with your PC's IP
+PORT = 12345
+FILE_PATH = "large_file.bin"  # Path to the large file
+
+BUFFER_SIZE = 1024 * 1024  # 1MB chunks
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print(f"Server listening on {HOST}:{PORT}")
-    conn, addr = s.accept()
-    with conn:
-        print(f"Connected by {addr}")
-        data = conn.recv(1024)
-        if data:
-            print("Received data:", data.decode())
+    s.connect((HOST, PORT))
+    print("Connected to receiver.")
+    
+    # Open the file and send it in chunks
+    with open(FILE_PATH, "rb") as f:
+        while chunk := f.read(BUFFER_SIZE):
+            s.sendall(chunk)
+            print(f"Sent {len(chunk)} bytes...")
+    
+    print("File transfer completed.")
