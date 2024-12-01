@@ -1,4 +1,5 @@
 import socket
+import time
 
 HOST = "0.0.0.0"
 PORT = 12345
@@ -14,9 +15,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     conn, addr = s.accept()
     print(f"Connected by {addr}")
     
+    start_time = time.time()  # Start timing
+
     with open(OUTPUT_FILE, "wb") as f:
         while chunk := conn.recv(BUFFER_SIZE):
             f.write(chunk)
             print(f"Received {len(chunk)} bytes...")
-    
-    print("File transfer completed.")
+
+    end_time = time.time()  # End timing
+
+    print(f"File transfer completed in {end_time - start_time:.2f} seconds.")
