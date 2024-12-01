@@ -25,11 +25,13 @@ try:
         cpu_usages = []  # Monitor CPU usage
 
         with open(FILE_PATH, "rb") as f:
-            while chunk := f.read(BUFFER_SIZE):
+            chunk = f.read(BUFFER_SIZE)
+            while chunk:
                 s.sendall(chunk)
                 cpu_usage = psutil.cpu_percent(interval=0.1)
                 cpu_usages.append(cpu_usage)
                 logging.info(f"Sent {len(chunk)} bytes. CPU usage: {cpu_usage:.2f}%")
+                chunk = f.read(BUFFER_SIZE)  # Read the next chunk
 
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time
