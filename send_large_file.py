@@ -15,9 +15,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     # Open the file and send it in chunks
     with open(FILE_PATH, "rb") as f:
-        while chunk := f.read(BUFFER_SIZE):
+        chunk = f.read(BUFFER_SIZE)
+        while chunk:
             s.sendall(chunk)
             print(f"Sent {len(chunk)} bytes...")
+            chunk = f.read(BUFFER_SIZE)  # Read the next chunk
 
     end_time = time.time()  # End timing
 
