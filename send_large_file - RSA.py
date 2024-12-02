@@ -12,7 +12,7 @@ FILE_PATH = "large_file.bin"
 HOST = "10.0.0.202"  # Receiver's IP
 PORT = 12345
 PLAINTEXT_SIZE = 190  # Max plaintext size for 2048-bit RSA with OAEP
-END_MARKER = b"END"  # Marker to signal end of transmission
+END_MARKER = b"END"
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -25,10 +25,7 @@ try:
                 if not chunk:
                     break
 
-                # Pad the last chunk if smaller than PLAINTEXT_SIZE
-                if len(chunk) < PLAINTEXT_SIZE:
-                    chunk += b" " * (PLAINTEXT_SIZE - len(chunk))
-
+                # Encrypt and send the chunk
                 encrypted_chunk = public_key.encrypt(
                     chunk,
                     padding.OAEP(
@@ -37,10 +34,10 @@ try:
                         label=None
                     )
                 )
-                print(f"Sending encrypted chunk of size {len(encrypted_chunk)} bytes")
                 s.sendall(encrypted_chunk)
+                print(f"Sent encrypted chunk of size {len(encrypted_chunk)} bytes")
 
-        # Send the end marker
+        # Send end marker
         s.sendall(END_MARKER)
         print("File sent successfully.")
 

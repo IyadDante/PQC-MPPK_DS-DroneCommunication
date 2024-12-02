@@ -11,7 +11,7 @@ OUTPUT_FILE = "received_large_file_RSA.bin"
 HOST = "0.0.0.0"
 PORT = 12345
 BUFFER_SIZE = 256  # Encrypted chunk size for 2048-bit RSA key
-END_MARKER = b"END"  # Marker to signal end of transmission
+END_MARKER = b"END"
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -29,13 +29,11 @@ try:
                     print("End of file marker received.")
                     break
 
-                print(f"Received encrypted chunk of size {len(chunk)} bytes")
-
-                # Ensure the chunk is the correct size before decrypting
                 if len(chunk) != BUFFER_SIZE:
-                    print("Received incomplete or corrupted chunk.")
+                    print(f"Received incomplete or corrupted chunk of size {len(chunk)} bytes.")
                     break
 
+                # Decrypt the chunk and write to the file
                 decrypted_chunk = private_key.decrypt(
                     chunk,
                     padding.OAEP(
@@ -44,7 +42,7 @@ try:
                         label=None
                     )
                 )
-                f.write(decrypted_chunk.rstrip())  # Strip padding after decryption
+                f.write(decrypted_chunk)
 
         print(f"File received and saved to {OUTPUT_FILE}.")
 
