@@ -19,8 +19,15 @@ try:
         print("Connected to receiver.")
 
         with open(FILE_PATH, "rb") as f:
-            chunk = f.read(PLAINTEXT_SIZE)
-            while chunk:
+            while True:
+                chunk = f.read(PLAINTEXT_SIZE)
+                if not chunk:
+                    break
+
+                # Pad the last chunk if it's smaller than PLAINTEXT_SIZE
+                if len(chunk) < PLAINTEXT_SIZE:
+                    chunk += b' ' * (PLAINTEXT_SIZE - len(chunk))
+
                 encrypted_chunk = public_key.encrypt(
                     chunk,
                     padding.OAEP(
@@ -31,7 +38,6 @@ try:
                 )
                 print(f"Sending encrypted chunk of size {len(encrypted_chunk)} bytes")
                 s.sendall(encrypted_chunk)
-                chunk = f.read(PLAINTEXT_SIZE)  # Read the next plaintext chunk
 
         print("File sent successfully.")
 

@@ -22,9 +22,18 @@ try:
         print(f"Connected by {addr}")
 
         with open(OUTPUT_FILE, "wb") as f:
-            chunk = conn.recv(BUFFER_SIZE)
-            while chunk:
+            while True:
+                chunk = conn.recv(BUFFER_SIZE)
+                if not chunk:
+                    break
+
                 print(f"Received encrypted chunk of size {len(chunk)} bytes")
+
+                # Ensure the chunk is the correct size before decrypting
+                if len(chunk) != BUFFER_SIZE:
+                    print("Received incomplete or corrupted chunk.")
+                    break
+
                 decrypted_chunk = private_key.decrypt(
                     chunk,
                     padding.OAEP(
@@ -33,8 +42,7 @@ try:
                         label=None
                     )
                 )
-                f.write(decrypted_chunk)
-                chunk = conn.recv(BUFFER_SIZE)  # Read the next encrypted chunk
+                f.write(decrypted_chunk.strip())  # Remove padding after decryption
 
         print(f"File received and saved to {OUTPUT_FILE}.")
 
