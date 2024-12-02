@@ -12,7 +12,8 @@ with open("public.pem", "rb") as f:
 FILE_PATH = "large_file.bin"
 HOST = "10.0.0.202"  # Receiver's IP
 PORT = 12345
-BUFFER_SIZE = 190  # For a 2048-bit RSA key with OAEP padding
+PLAINTEXT_SIZE = 190  # Max plaintext size for 2048-bit RSA with OAEP
+ENCRYPTED_SIZE = 256  # Fixed ciphertext size for 2048-bit RSA
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -20,7 +21,7 @@ try:
         print("Connected to receiver.")
 
         with open(FILE_PATH, "rb") as f:
-            chunk = f.read(BUFFER_SIZE)
+            chunk = f.read(PLAINTEXT_SIZE)
             while chunk:
                 encrypted_chunk = public_key.encrypt(
                     chunk,
@@ -31,8 +32,7 @@ try:
                     )
                 )
                 s.sendall(encrypted_chunk)
-                time.sleep(0.01)  # Prevent overloading receiver
-                chunk = f.read(BUFFER_SIZE)  # Read next chunk
+                chunk = f.read(PLAINTEXT_SIZE)  # Read the next plaintext chunk
 
         print("File sent successfully.")
 
