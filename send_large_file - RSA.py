@@ -2,6 +2,7 @@ import socket
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.backends import default_backend
+import struct
 
 # Load public key
 with open("public.pem", "rb") as f:
@@ -25,7 +26,7 @@ try:
                 if not chunk:
                     break
 
-                # Encrypt and send the chunk
+                # Encrypt the chunk
                 encrypted_chunk = public_key.encrypt(
                     chunk,
                     padding.OAEP(
@@ -34,10 +35,14 @@ try:
                         label=None
                     )
                 )
+
+                # Send the length of the encrypted chunk followed by the chunk itself
+                s.sendall(struct.pack("!I", len(encrypted_chunk)))  # Length as 4-byte integer
                 s.sendall(encrypted_chunk)
                 print(f"Sent encrypted chunk of size {len(encrypted_chunk)} bytes")
 
-        # Send end marker to signal completion
+        # Send end marker
+        s.sendall(struct.pack("!I", len(END_MARKER)))
         s.sendall(END_MARKER)
         print("File sent successfully.")
 

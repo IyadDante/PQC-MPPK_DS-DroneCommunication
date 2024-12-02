@@ -1,6 +1,7 @@
 import socket
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
+import struct
 
 # Load private key
 with open("private.pem", "rb") as f:
@@ -10,7 +11,6 @@ with open("private.pem", "rb") as f:
 OUTPUT_FILE = "received_large_file_RSA.bin"
 HOST = "0.0.0.0"
 PORT = 12345
-BUFFER_SIZE = 256  # Encrypted chunk size for 2048-bit RSA key
 END_MARKER = b"END_MARKER"
 
 try:
@@ -24,16 +24,24 @@ try:
 
         with open(OUTPUT_FILE, "wb") as f:
             while True:
-                chunk = conn.recv(BUFFER_SIZE)
+                # Receive the length of the incoming chunk
+                chunk_size_data = conn.recv(4)  # 4 bytes for chunk size
+                if not chunk_size_data:
+                    break
+
+                chunk_size = struct.unpack("!I", chunk_size_data)[0]
+
+                # Receive the actual chunk
+                chunk = conn.recv(chunk_size)
                 if chunk == END_MARKER:
                     print("End of file marker received.")
                     break
 
-                if len(chunk) != BUFFER_SIZE and chunk != END_MARKER:
+                if len(chunk) != chunk_size:
                     print(f"Received incomplete or corrupted chunk of size {len(chunk)} bytes.")
                     break
 
-                # Decrypt the chunk and write to the file
+                # Decrypt and write the chunk
                 decrypted_chunk = private_key.decrypt(
                     chunk,
                     padding.OAEP(
