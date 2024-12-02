@@ -12,7 +12,7 @@ PORT = 12345
 BUFFER_SIZE = 1024 * 1024  # 1MB chunks
 
 # AES parameters
-KEY = b"thisisaverysecurekey1234"  # Same 32 bytes key as the sender
+KEY = b"thisisaverysecurekey1234"  # 32 bytes key
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -23,9 +23,9 @@ try:
         conn, addr = s.accept()
         print(f"Connected by {addr}")
 
-        # Receive IV from the sender
-        iv_length = struct.unpack("!I", conn.recv(4))[0]  # IV length
-        iv = conn.recv(iv_length)  # IV itself
+        # Receive IV from sender
+        iv_length = struct.unpack("!I", conn.recv(4))[0]  # Receive IV length
+        iv = conn.recv(iv_length)  # Receive IV itself
 
         # Initialize AES cipher
         cipher = Cipher(algorithms.AES(KEY), modes.GCM(iv), backend=default_backend())
@@ -36,30 +36,38 @@ try:
 
         with open(OUTPUT_FILE, "wb") as f:
             while True:
-                # Receive encrypted chunk
-                chunk_size_data = conn.recv(4)  # Receive chunk size
+                # Receive chunk size
+                chunk_size_data = conn.recv(4)
                 if not chunk_size_data:
                     break
 
                 chunk_size = struct.unpack("!I", chunk_size_data)[0]
-                encrypted_chunk = conn.recv(chunk_size)
+                if chunk_size == 0:
+                    break
 
-                # Decrypt and write chunk
-                decrypted_chunk = decryptor.update(encrypted_chunk)
+                # Receive and decrypt the chunk
+                chunk = conn.recv(chunk_size)
+                if len(chunk) != chunk_size:
+                    print(f"Received incomplete or corrupted chunk of size {len(chunk)} bytes.")
+                    break
+
+                decrypted_chunk = decryptor.update(chunk)
                 f.write(decrypted_chunk)
                 cpu_usages.append(psutil.cpu_percent(interval=0.1))  # Record CPU usage
-                print(f"Received and decrypted chunk of size {chunk_size} bytes.")
+                print(f"Received and decrypted chunk of size {len(chunk)} bytes.")
 
-        # Finalize decryption and receive the tag
-        decrypted_final = decryptor.finalize()
-        f.write(decrypted_final)
-        tag_length = struct.unpack("!I", conn.recv(4))[0]
-        tag = conn.recv(tag_length)
-        decryptor.verify(tag)  # Verify GCM tag
+            # Finalize decryption and verify tag
+            final_decrypted = decryptor.finalize()
+            f.write(final_decrypted)
+
+            # Receive and verify tag
+            tag_length = struct.unpack("!I", conn.recv(4))[0]
+            tag = conn.recv(tag_length)
+            decryptor.finalize_with_tag(tag)
 
         end_time = time.time()  # End timing
 
-        print(f"File received and saved to {OUTPUT_FILE} in {end_time - start_time:.2f} seconds.")
+        print(f"File transfer completed in {end_time - start_time:.2f} seconds.")
         if cpu_usages:
             print(f"Average CPU usage during transfer: {sum(cpu_usages) / len(cpu_usages):.2f}%")
 
