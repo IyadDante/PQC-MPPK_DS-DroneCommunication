@@ -1,7 +1,5 @@
 import socket
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 import os
 import time
@@ -35,12 +33,14 @@ try:
         cpu_usages = []  # Track CPU usage
 
         with open(FILE_PATH, "rb") as f:
-            while chunk := f.read(BUFFER_SIZE):
+            chunk = f.read(BUFFER_SIZE)
+            while chunk:
                 encrypted_chunk = encryptor.update(chunk)
                 s.sendall(struct.pack("!I", len(encrypted_chunk)))  # Send chunk length
                 s.sendall(encrypted_chunk)  # Send encrypted chunk
                 cpu_usages.append(psutil.cpu_percent(interval=0.1))  # Record CPU usage
                 print(f"Sent encrypted chunk of size {len(encrypted_chunk)} bytes.")
+                chunk = f.read(BUFFER_SIZE)  # Read the next chunk
 
         # Finalize encryption and send the tag
         encrypted_final = encryptor.finalize()
