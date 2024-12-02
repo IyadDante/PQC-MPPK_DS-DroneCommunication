@@ -2,6 +2,8 @@ import socket
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
 import struct
+import time
+import psutil
 
 # Load private key
 with open("private.pem", "rb") as f:
@@ -21,6 +23,9 @@ try:
 
         conn, addr = s.accept()
         print(f"Connected by {addr}")
+
+        start_time = time.time()  # Start timing
+        cpu_usages = []  # Track CPU usage
 
         with open(OUTPUT_FILE, "wb") as f:
             while True:
@@ -51,8 +56,13 @@ try:
                     )
                 )
                 f.write(decrypted_chunk)
+                cpu_usages.append(psutil.cpu_percent(interval=0.1))  # Record CPU usage
 
-        print(f"File received and saved to {OUTPUT_FILE}.")
+        end_time = time.time()  # End timing
+
+        print(f"File received and saved to {OUTPUT_FILE} in {end_time - start_time:.2f} seconds.")
+        if cpu_usages:  # Avoid division by zero if no CPU data was recorded
+            print(f"Average CPU usage during transfer: {sum(cpu_usages) / len(cpu_usages):.2f}%")
 
 except Exception as e:
     print(f"An error occurred: {e}")
