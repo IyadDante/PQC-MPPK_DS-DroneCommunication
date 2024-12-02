@@ -11,7 +11,7 @@ OUTPUT_FILE = "received_large_file_RSA.bin"
 HOST = "0.0.0.0"
 PORT = 12345
 BUFFER_SIZE = 256  # Encrypted chunk size for 2048-bit RSA key
-END_MARKER = b"END"
+END_MARKER = b"END_MARKER"
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -29,7 +29,7 @@ try:
                     print("End of file marker received.")
                     break
 
-                if len(chunk) != BUFFER_SIZE:
+                if len(chunk) != BUFFER_SIZE and chunk != END_MARKER:
                     print(f"Received incomplete or corrupted chunk of size {len(chunk)} bytes.")
                     break
 
