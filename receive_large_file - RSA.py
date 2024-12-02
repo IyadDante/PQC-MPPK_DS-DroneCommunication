@@ -24,6 +24,7 @@ try:
         with open(OUTPUT_FILE, "wb") as f:
             chunk = conn.recv(BUFFER_SIZE)
             while chunk:
+                print(f"Received encrypted chunk of size {len(chunk)} bytes")
                 decrypted_chunk = private_key.decrypt(
                     chunk,
                     padding.OAEP(
@@ -33,7 +34,7 @@ try:
                     )
                 )
                 f.write(decrypted_chunk)
-                chunk = conn.recv(BUFFER_SIZE)  # Read next encrypted chunk
+                chunk = conn.recv(BUFFER_SIZE)  # Read the next encrypted chunk
 
         print(f"File received and saved to {OUTPUT_FILE}.")
 

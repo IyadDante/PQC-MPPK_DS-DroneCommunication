@@ -2,7 +2,6 @@ import socket
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.backends import default_backend
-import time
 
 # Load public key
 with open("public.pem", "rb") as f:
@@ -13,7 +12,6 @@ FILE_PATH = "large_file.bin"
 HOST = "10.0.0.202"  # Receiver's IP
 PORT = 12345
 PLAINTEXT_SIZE = 190  # Max plaintext size for 2048-bit RSA with OAEP
-ENCRYPTED_SIZE = 256  # Fixed ciphertext size for 2048-bit RSA
 
 try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -31,6 +29,7 @@ try:
                         label=None
                     )
                 )
+                print(f"Sending encrypted chunk of size {len(encrypted_chunk)} bytes")
                 s.sendall(encrypted_chunk)
                 chunk = f.read(PLAINTEXT_SIZE)  # Read the next plaintext chunk
 
