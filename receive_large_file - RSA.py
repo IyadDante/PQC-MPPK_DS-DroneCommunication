@@ -7,9 +7,11 @@ import logging
 with open("private.pem", "rb") as f:
     private_key = serialization.load_pem_private_key(f.read(), password=None)
 
+# File to save
+OUTPUT_FILE = "received_large_file_RSA.bin"
 HOST = "0.0.0.0"
 PORT = 12345
-OUTPUT_FILE = "received_file_RSA.bin"
+BUFFER_SIZE = 1024  # RSA encrypted chunk size
 
 # Configure logging
 logging.basicConfig(
@@ -18,24 +20,34 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    logging.info(f"Server listening on {HOST}:{PORT}")
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        logging.info(f"Server listening on {HOST}:{PORT}")
+        print(f"Server listening on {HOST}:{PORT}")
 
-    conn, addr = s.accept()
-    logging.info(f"Connected by {addr}")
+        conn, addr = s.accept()
+        logging.info(f"Connected by {addr}")
+        print(f"Connected by {addr}")
 
-    with open(OUTPUT_FILE, "wb") as f:
-        while chunk := conn.recv(512):  # Adjust based on encryption chunk size
-            decrypted_chunk = private_key.decrypt(
-                chunk,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
+        with open(OUTPUT_FILE, "wb") as f:
+            chunk = conn.recv(BUFFER_SIZE)
+            while chunk:
+                decrypted_chunk = private_key.decrypt(
+                    chunk,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
                 )
-            )
-            f.write(decrypted_chunk)
+                f.write(decrypted_chunk)
+                chunk = conn.recv(BUFFER_SIZE)
 
-    logging.info("File received and decrypted.")
+        logging.info(f"File received and saved to {OUTPUT_FILE}.")
+        print(f"File received and saved to {OUTPUT_FILE}.")
+
+except Exception as e:
+    logging.error(f"An error occurred: {e}")
+    print(f"An error occurred: {e}")

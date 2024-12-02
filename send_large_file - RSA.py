@@ -21,23 +21,31 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    logging.info("Connected to receiver.")
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        logging.info("Connected to receiver.")
 
-    start_time = time.time()
+        start_time = time.time()
 
-    with open(FILE_PATH, "rb") as f:
-        while chunk := f.read(BUFFER_SIZE - 42):  # Subtract padding overhead
-            encrypted_chunk = public_key.encrypt(
-                chunk,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
+        with open(FILE_PATH, "rb") as f:
+            chunk = f.read(BUFFER_SIZE - 42)  # Subtract padding overhead
+            while chunk:
+                encrypted_chunk = public_key.encrypt(
+                    chunk,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
                 )
-            )
-            s.sendall(encrypted_chunk)
+                s.sendall(encrypted_chunk)
+                chunk = f.read(BUFFER_SIZE - 42)  # Read the next chunk
 
-    elapsed_time = time.time() - start_time
-    logging.info(f"File sent in {elapsed_time:.2f} seconds.")
+        elapsed_time = time.time() - start_time
+        logging.info(f"File sent in {elapsed_time:.2f} seconds.")
+        print(f"File sent in {elapsed_time:.2f} seconds.")
+
+except Exception as e:
+    logging.error(f"An error occurred: {e}")
+    print(f"An error occurred: {e}")
