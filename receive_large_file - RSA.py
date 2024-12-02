@@ -11,7 +11,7 @@ with open("private.pem", "rb") as f:
 OUTPUT_FILE = "received_large_file_RSA.bin"
 HOST = "0.0.0.0"
 PORT = 12345
-BUFFER_SIZE = 1024  # RSA encrypted chunk size
+BUFFER_SIZE = 256  # Encrypted chunk size for 2048-bit RSA key
 
 # Configure logging
 logging.basicConfig(
