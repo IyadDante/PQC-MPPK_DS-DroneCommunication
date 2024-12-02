@@ -45,12 +45,16 @@ try:
                 if chunk_size == 0:
                     break
 
-                # Receive and decrypt the chunk
+                # Receive the chunk
                 chunk = conn.recv(chunk_size)
+                while len(chunk) < chunk_size:
+                    chunk += conn.recv(chunk_size - len(chunk))  # Ensure full chunk is received
+
                 if len(chunk) != chunk_size:
                     print(f"Received incomplete or corrupted chunk of size {len(chunk)} bytes.")
                     break
 
+                # Decrypt and write the chunk
                 decrypted_chunk = decryptor.update(chunk)
                 f.write(decrypted_chunk)
                 cpu_usages.append(psutil.cpu_percent(interval=0.1))  # Record CPU usage

@@ -33,14 +33,16 @@ try:
         cpu_usages = []  # Track CPU usage
 
         with open(FILE_PATH, "rb") as f:
-            chunk = f.read(BUFFER_SIZE)
-            while chunk:
+            while True:
+                chunk = f.read(BUFFER_SIZE)
+                if not chunk:
+                    break
+
                 encrypted_chunk = encryptor.update(chunk)
                 s.sendall(struct.pack("!I", len(encrypted_chunk)))  # Send chunk length
                 s.sendall(encrypted_chunk)  # Send encrypted chunk
                 cpu_usages.append(psutil.cpu_percent(interval=0.1))  # Record CPU usage
                 print(f"Sent encrypted chunk of size {len(encrypted_chunk)} bytes.")
-                chunk = f.read(BUFFER_SIZE)  # Read the next chunk
 
         # Finalize encryption and send the last block and tag
         encrypted_final = encryptor.finalize()
