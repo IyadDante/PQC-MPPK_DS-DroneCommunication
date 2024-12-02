@@ -42,7 +42,7 @@ try:
                 print(f"Sent encrypted chunk of size {len(encrypted_chunk)} bytes.")
                 chunk = f.read(BUFFER_SIZE)  # Read the next chunk
 
-        # Finalize encryption and send the tag
+        # Finalize encryption and send the last block and tag
         encrypted_final = encryptor.finalize()
         s.sendall(struct.pack("!I", len(encrypted_final)))
         s.sendall(encrypted_final)
