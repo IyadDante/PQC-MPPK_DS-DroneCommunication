@@ -1,56 +1,65 @@
 import socket
+import hashlib
+import struct
 import time
 import psutil
-import hashlib
-import json
-from verify import V  # Import the verification function
+from verify import verify_signature  # Use existing MPPK verification logic
 
+# Constants
+OUTPUT_FILE = "received_large_file_MPPK.bin"
 HOST = "0.0.0.0"
 PORT = 12345
-OUTPUT_FILE = "received_large_file.bin"
-SIGNATURE_FILE = "received_file_signature.json"
-PUBLIC_KEY_FILE = "public_key.json"
-
 BUFFER_SIZE = 1024 * 1024  # 1MB chunks
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print(f"Server listening on {HOST}:{PORT}")
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"Server listening on {HOST}:{PORT}")
 
-    conn, addr = s.accept()
-    print(f"Connected by {addr}")
+        conn, addr = s.accept()
+        print(f"Connected by {addr}")
 
-    # Step 1: Receive the file
-    with open(OUTPUT_FILE, "wb") as f:
-        while chunk := conn.recv(BUFFER_SIZE):
-            f.write(chunk)
-            print(f"Received {len(chunk)} bytes...")
+        start_time = time.time()  # Start timing
+        cpu_usages = []
 
-    # Step 2: Receive the signature
-    with open(SIGNATURE_FILE, "wb") as sig_file:
-        while chunk := conn.recv(BUFFER_SIZE):
-            sig_file.write(chunk)
-            print(f"Received {len(chunk)} bytes (signature file)...")
+        # Step 1: Receive file hash and signature
+        file_hash_length = struct.unpack("!I", conn.recv(4))[0]
+        file_hash = conn.recv(file_hash_length).decode()
+        signature_length = struct.unpack("!I", conn.recv(4))[0]
+        signature = conn.recv(signature_length).decode()
+        print(f"Received file hash: {file_hash} and signature: {signature}")
 
-print("File and signature received.")
+        # Step 2: Receive the file in chunks
+        received_file_data = b""
+        while True:
+            chunk_size_data = conn.recv(4)
+            if not chunk_size_data:
+                break
 
-# Step 3: Verify the File
-with open(OUTPUT_FILE, "rb") as f:
-    file_data = f.read()
+            chunk_size = struct.unpack("!I", chunk_size_data)[0]
+            if chunk_size == 0:  # End marker
+                break
 
-hash_object = hashlib.sha256(file_data)  # Hash the received file
-mu = hash_object.hexdigest()
+            chunk = conn.recv(chunk_size)
+            received_file_data += chunk
+            cpu_usages.append(psutil.cpu_percent(interval=0.1))
+            print(f"Received chunk of size {len(chunk)} bytes.")
 
-with open(SIGNATURE_FILE, "r") as sig_file:
-    signature = json.load(sig_file)
+        # Step 3: Verify hash and signature
+        reconstructed_hash = hashlib.sha256(received_file_data).hexdigest()
+        is_valid = verify_signature(reconstructed_hash, signature)  # From verify.py
 
-with open(PUBLIC_KEY_FILE, "r") as pub_file:
-    public_key = json.load(pub_file)
+        if is_valid and reconstructed_hash == file_hash:
+            with open(OUTPUT_FILE, "wb") as f:
+                f.write(received_file_data)
+            print("File integrity and MPPK signature verified. File saved.")
+        else:
+            print("Verification failed: Hash or MPPK signature mismatch!")
 
-# Verify the signature
-result = V(public_key, int(mu, 16), signature, m=2, n=2, lambda_=1, ell=[1, 1], p=19)
-if result['left'] == result['right']:
-    print("File verification: VALID")
-else:
-    print("File verification: INVALID")
+        end_time = time.time()
+        print(f"Time taken: {end_time - start_time:.2f} seconds.")
+        print(f"Average CPU usage: {sum(cpu_usages) / len(cpu_usages):.2f}%")
+
+except Exception as e:
+    print(f"An error occurred: {e}")
